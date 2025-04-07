@@ -1,30 +1,18 @@
-<script lang="ts">
+<script setup lang="ts">
+import { ref } from "vue";
 import { RouterLink, RouterView } from "vue-router";
-import ProjectPage from "./components/ProjectPage.vue";
+import Modal from "./components/Modal.vue";
+import ProjectPage from "./pages/ProjectPage.vue";
 
-/*methods: {
-  const openModalBtn = document.getElementById(
-    "openModalBtn"
-  ) as HTMLButtonElement;
-  const closeModalBtn = document.getElementById(
-    "closeModalBtn"
-  ) as HTMLSpanElement;
-  const modal = document.getElementById("modal") as HTMLDivElement;
+const isModalOpen = ref(false);
 
-  openModalBtn.addEventListener("click", () => {
-    modal.style.display = "block";
-  });
+const openModal = () => {
+  isModalOpen.value = true;
+};
 
-  closeModalBtn.addEventListener("click", () => {
-    modal.style.display = "none";
-  });
-
-  window.addEventListener("click", (event: MouseEvent) => {
-    if (event.target === modal) {
-      modal.style.display = "none";
-    }
-  });
-}*/
+const closeModal = () => {
+  isModalOpen.value = false;
+};
 </script>
 
 <template>
@@ -58,17 +46,14 @@ import ProjectPage from "./components/ProjectPage.vue";
         </tr>
       </tbody>
     </table>
-    <button id="openModalBtn" class="open-modal">Додати проєкт</button>
-    <div id="modal" class="modal">
-      <div class="modal-content">
-        <span id="closeModalBtn" class="close">&times;</span>
-        <input type="text" label="Назва завдвння" />
-        <input type="text" label="Виконавець" />
-        <input type="text" label="Статус" />
-        <input type="text" label="Термін" />
-        <button>Зберегти</button>
-      </div>
-    </div>
+    <button @click="openModal" class="open-modal">Додати проєкт</button>
+    <Modal :isVisible="isModalOpen" @close="closeModal">
+      <input type="text" label="Назва завдвння" />
+      <input type="text" label="Виконавець" />
+      <input type="text" label="Статус" />
+      <input type="text" label="Термін" />
+      <button>Зберегти</button>
+    </Modal>
   </div>
 </template>
 

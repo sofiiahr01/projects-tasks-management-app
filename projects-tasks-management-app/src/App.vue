@@ -1,30 +1,45 @@
 <script lang="ts">
 import { RouterLink, RouterView } from "vue-router";
-import ProjectPage from "./components/ProjectPage.vue";
+import { ref } from "vue";
+import ProjectPage from "./pages/ProjectPage.vue";
+import Modal from "./components/Modal.vue";
+export default {
+  data() {
+    return {
+      project: [],
+      id: "",
+      projectName: "",
+    };
+  },
+  components: { Modal },
 
-/*methods: {
-  const openModalBtn = document.getElementById(
-    "openModalBtn"
-  ) as HTMLButtonElement;
-  const closeModalBtn = document.getElementById(
-    "closeModalBtn"
-  ) as HTMLSpanElement;
-  const modal = document.getElementById("modal") as HTMLDivElement;
+  setup() {
+    const isModalOpen = ref(false);
 
-  openModalBtn.addEventListener("click", () => {
-    modal.style.display = "block";
-  });
+    const openModal = () => {
+      isModalOpen.value = true;
+    };
 
-  closeModalBtn.addEventListener("click", () => {
-    modal.style.display = "none";
-  });
+    const closeModal = () => {
+      isModalOpen.value = false;
+    };
 
-  window.addEventListener("click", (event: MouseEvent) => {
-    if (event.target === modal) {
-      modal.style.display = "none";
-    }
-  });
-}*/
+    return {
+      isModalOpen,
+      openModal,
+      closeModal,
+    };
+  },
+
+  methods: {
+    SendData() {
+      project.push({
+        id: this.id,
+        title: this.projectName,
+      });
+    },
+  },
+};
 </script>
 
 <template>
@@ -40,47 +55,40 @@ import ProjectPage from "./components/ProjectPage.vue";
         </tr>
       </thead>
       <tbody>
-        <tr>
+        <tr v-for="row in rows" :key="row.id">
+          <td {{ row.id }}></td>
+          <td>{{ projectName }}</td>
           <td contenteditable="true"></td>
-          <td contenteditable="true"></td>
-          <td contenteditable="true"></td>
-          <td contenteditable="true">
+          <td>
             <select name="status" id="status">
               <option value="default" desabled></option>
-              <option value="to-do">зробити</option>
-              <option value="in-progress">в роботі</option>
-              <option value="done">виконано</option>
+              <option value="to-do">To Do</option>
+              <option value="in-progress">In Progress</option>
+              <option value="done">Done</option>
             </select>
           </td>
-          <td contenteditable="true">
+          <td>
             <input type="date" name="event_date_1" id="date" />
           </td>
         </tr>
       </tbody>
     </table>
-    <button id="openModalBtn" class="open-modal">Додати проєкт</button>
-    <div id="modal" class="modal">
-      <div class="modal-content">
-        <span id="closeModalBtn" class="close">&times;</span>
-        <input type="text" label="Назва проєкту" /><input
-          type="text"
-          label="Опис проєкту"
-        />
-        <button>Зберегти</button>
-      </div>
-    </div>
+    <button @click="openModal" class="open-modal">Додати проєкт</button>
+    <Modal :isVisible="isModalOpen" @close="closeModal" class="modal">
+      <label for="name" class="input-name">Назва проєкту</label>
+      <input type="text" v-model="projectName" id="name" required />
+      <label for="description" class="input-name">Опис проєкту</label>
+      <textarea id="description"></textarea>
+      <button @click="SendData()">Зберегти</button>
+    </Modal>
   </div>
 </template>
 
 <style scoped>
-body {
-  text-align: center;
-}
-
 .table-wrap {
+  position: relative;
   max-width: 550px;
   text-align: right;
-  margin: auto;
 }
 
 table {
@@ -112,51 +120,50 @@ td {
   border: 1px solid #dad5c6;
 }
 
+select {
+  background-color: #fafafa;
+}
+
 #status,
 #date {
   border: none;
   color: #232e3f;
 }
 
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 1000;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgba(0, 0, 0, 0.5);
-}
-
-.modal-content {
-  background-color: #fff;
-  margin: 15% auto;
-  padding: 20px;
-  border-radius: 10px;
-  width: 300px;
-  position: relative;
-  text-align: center;
-}
-
-.close {
-  position: absolute;
-  right: 15px;
-  top: 10px;
-  font-size: 24px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
 button {
   background-color: #cf9421;
-  color: #eeece3;
+  color: #fafafa;
   font-family: "Monterrat", sans-serif;
   font-weight: 400;
   border-radius: 10px;
   padding: 10px;
   border: none;
   cursor: pointer;
+}
+
+label {
+  padding-right: 5px;
+}
+
+input,
+textarea {
+  background-color: #eeece3;
+  border: 2px solid #dad5c6;
+  border-radius: 5px;
+}
+
+.modal input {
+  margin-bottom: 10px;
+}
+
+.modal button {
+  margin-top: 10px;
+}
+
+.input-name {
+  color: #232e3f;
+  font-family: "Monterrat", sans-serif;
+  font-weight: 300;
+  font-size: 15px;
 }
 </style>
