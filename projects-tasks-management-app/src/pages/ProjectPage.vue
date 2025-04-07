@@ -1,8 +1,29 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { RouterLink, RouterView } from "vue-router";
-import Modal from "./components/Modal.vue";
-import ProjectPage from "./pages/ProjectPage.vue";
+import { ref, onMounted } from "vue";
+import { RouterLink, RouterView, useRoute } from "vue-router";
+import Modal from "../components/Modal.vue";
+
+interface Project {
+  id: number;
+  name: string;
+  tasks: number | string;
+  status: string;
+  createdAt: string;
+}
+
+const route = useRoute();
+const project = ref<Project | null>(null);
+
+onMounted(() => {
+  const saved = localStorage.getItem("projects");
+  if (saved) {
+    const projects: Project[] = JSON.parse(saved);
+    const found = projects.find((p) => p.id === Number(route.params.id));
+    if (found) {
+      project.value = found;
+    }
+  }
+});
 
 const isModalOpen = ref(false);
 
@@ -17,6 +38,8 @@ const closeModal = () => {
 
 <template>
   <div class="table-wrap">
+    <router-link to="/">← Назад</router-link>
+    <h2>{{ project?.name }}</h2>
     <table>
       <thead>
         <tr>
@@ -29,29 +52,29 @@ const closeModal = () => {
       </thead>
       <tbody>
         <tr>
-          <td contenteditable="true"></td>
-          <td contenteditable="true"></td>
-          <td contenteditable="true"></td>
-          <td contenteditable="true">
-            <select name="status" id="status">
-              <option value="default" desabled></option>
-              <option value="to-do">зробити</option>
-              <option value="in-progress">в роботі</option>
-              <option value="done">виконано</option>
-            </select>
-          </td>
-          <td contenteditable="true">
-            <input type="date" name="event_date_1" id="date" />
-          </td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
         </tr>
       </tbody>
     </table>
-    <button @click="openModal" class="open-modal">Додати проєкт</button>
+    <button @click="openModal">Додати проєкт</button>
     <Modal :isVisible="isModalOpen" @close="closeModal">
-      <input type="text" label="Назва завдвння" />
-      <input type="text" label="Виконавець" />
-      <input type="text" label="Статус" />
-      <input type="text" label="Термін" />
+      <label for="taskName">Назва завдання</label>
+      <input type="text" id="taskName" />
+      <label for="name">Виконавець</label>
+      <select name="name" id="name"></select>
+      <label for="status">Статус</label>
+      <select name="status" id="status">
+        <option value="default" desabled></option>
+        <option value="to-do">зробити</option>
+        <option value="in-progress">в роботі</option>
+        <option value="done">виконано</option>
+      </select>
+      <label for="date">Термін</label>
+      <input type="date" name="event_date_1" id="date" />
       <button>Зберегти</button>
     </Modal>
   </div>
@@ -59,6 +82,13 @@ const closeModal = () => {
 
 <style scoped>
 body {
+  text-align: center;
+}
+
+h2 {
+  font-family: "Montserrat", sans-serif;
+  font-weight: 400;
+  color: #232e3f;
   text-align: center;
 }
 
@@ -85,7 +115,7 @@ th {
   color: #232e3f;
   font-family: "Monterrat", sans-serif;
   font-weight: 400;
-  padding: 10px;
+  padding: 20px;
 }
 
 thead th {
@@ -93,7 +123,7 @@ thead th {
 }
 
 td {
-  padding: 10px;
+  padding: 20px;
   border: 1px solid #dad5c6;
 }
 
