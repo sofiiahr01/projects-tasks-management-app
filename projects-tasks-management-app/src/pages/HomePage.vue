@@ -104,8 +104,8 @@ const sortByField = () => {
     const bValue = b[sortField.value as keyof Project];
 
     if (sortField.value === "tasks") {
-      const aTasks = typeof aValue === "string" ? parseInt(aValue, 10) : aValue;
-      const bTasks = typeof bValue === "string" ? parseInt(bValue, 10) : bValue;
+      const aTasks = aValue as number;
+      const bTasks = bValue as number;
       return aTasks - bTasks;
     } else {
       if (aValue < bValue) return -1;
@@ -157,7 +157,7 @@ const addProject = () => {
   projects.value.push({
     id: nextId.value++,
     name: projectName.value,
-    tasks: "",
+    tasks: 0,
     status: "",
     createdAt: "",
   });

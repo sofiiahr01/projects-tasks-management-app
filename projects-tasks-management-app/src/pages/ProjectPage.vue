@@ -149,21 +149,12 @@ watch(
           <option value="createdAt">Термін</option>
         </select>
       </div>
-      <div class="sort-item">
-        <label for="filterName">Пошук</label>
-        <input
-          type="text"
-          id="filterName"
-          v-model="filterName"
-          placeholder="Введіть назву проєкту"
-        />
-      </div>
     </div>
     <table>
       <thead>
         <tr>
           <th>id</th>
-          <th>Назва проєкту</th>
+          <th>Назва завдання</th>
           <th>Виконавець</th>
           <th>Статус</th>
           <th>Термін</th>
@@ -304,14 +295,23 @@ button {
 
 .input-name {
   color: #232e3f;
-  font-family: "Monterrat", sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-weight: 300;
   font-size: 15px;
 }
 
+td {
+  color: #232e3f;
+  font-family: "Montserrat", sans-serif;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+}
+
 .sort-container {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 100px;
   margin: 20px 0;
 }
 
