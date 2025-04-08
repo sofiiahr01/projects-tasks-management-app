@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from "vue-router";
-import { onMounted, reactive, watch, ref } from "vue";
+import { onMounted, reactive, watch, ref, computed } from "vue";
 import ProjectPage from "./pages/ProjectPage.vue";
 import Modal from "../components/Modal.vue";
 
@@ -18,7 +18,6 @@ interface Row {
   id: number;
   name: string;
   tasks: number;
-  tasks: number | string;
   status: string;
   createdAt: string;
 }
@@ -97,10 +96,44 @@ onMounted(() => {
   updateWidths();
 });
 
+const sortField = ref<string>("id");
+
+const sortByField = () => {
+  projects.value.sort((a, b) => {
+    const aValue = a[sortField.value as keyof Project];
+    const bValue = b[sortField.value as keyof Project];
+
+    if (sortField.value === "tasks") {
+      const aTasks = typeof aValue === "string" ? parseInt(aValue, 10) : aValue;
+      const bTasks = typeof bValue === "string" ? parseInt(bValue, 10) : bValue;
+      return aTasks - bTasks;
+    } else {
+      if (aValue < bValue) return -1;
+      if (aValue > bValue) return 1;
+    }
+    return 0;
+  });
+};
+
+const filterName = ref("");
+const filterStatus = ref("");
+
+const filteredProjects = computed(() => {
+  return projects.value.filter((project) => {
+    const matchesName = project.name
+      .toLowerCase()
+      .includes(filterName.value.toLowerCase());
+    const matchesStatus = filterStatus.value
+      ? project.status === filterStatus.value
+      : true;
+    return matchesName && matchesStatus;
+  });
+});
+
 interface Project {
   id: number;
   name: string;
-  tasks: number | string;
+  tasks: number;
   status: string;
   createdAt: string;
 }
@@ -144,6 +177,35 @@ watch(
 
 <template>
   <div class="table-wrap">
+    <div class="sort-container">
+      <div class="sort-item">
+        <label for="filterStatus">Фільтр:</label>
+        <select id="filterStatus" v-model="filterStatus">
+          <option value="">Всі</option>
+          <option value="to-do">To Do</option>
+          <option value="in-progress">In Progress</option>
+          <option value="done">Done</option>
+        </select>
+      </div>
+      <div class="sort-item">
+        <label for="sortField">Сортувати за:</label>
+        <select id="sortField" v-model="sortField" @change="sortByField">
+          <option value="id">ID</option>
+          <option value="name">Назва проєкту</option>
+          <option value="tasks">Кількість завдань</option>
+          <option value="status">Статус</option>
+        </select>
+      </div>
+      <div class="sort-item">
+        <label for="filterName">Пошук</label>
+        <input
+          type="text"
+          id="filterName"
+          v-model="filterName"
+          placeholder="Введіть назву проєкту"
+        />
+      </div>
+    </div>
     <table>
       <thead>
         <tr>
@@ -161,7 +223,7 @@ watch(
         </tr>
       </thead>
       <tbody>
-        <tr v-for="project in projects" :key="project.id">
+        <tr v-for="project in filteredProjects" :key="project.id">
           <td>{{ project.id }}</td>
           <td>
             <router-link :to="`/project/${project.id}`">{{
@@ -283,5 +345,15 @@ textarea {
   font-family: "Monterrat", sans-serif;
   font-weight: 300;
   font-size: 15px;
+}
+
+.sort-container {
+  display: flex;
+  justify-content: space-between;
+}
+
+.sort-item {
+  font-family: "Montserrat", sans-serif;
+  font-size: 14px;
 }
 </style>

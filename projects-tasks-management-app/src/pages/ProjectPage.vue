@@ -25,6 +25,40 @@ onMounted(() => {
   }
 });
 
+const sortField = ref<string>("id");
+
+const sortByField = () => {
+  projects.value.sort((a, b) => {
+    const aValue = a[sortField.value as keyof Project];
+    const bValue = b[sortField.value as keyof Project];
+
+    if (sortField.value === "tasks") {
+      const aTasks = typeof aValue === "string" ? parseInt(aValue, 10) : aValue;
+      const bTasks = typeof bValue === "string" ? parseInt(bValue, 10) : bValue;
+      return aTasks - bTasks;
+    } else {
+      if (aValue < bValue) return -1;
+      if (aValue > bValue) return 1;
+    }
+    return 0;
+  });
+};
+
+const filterName = ref("");
+const filterStatus = ref("");
+
+const filteredProjects = computed(() => {
+  return projects.value.filter((project) => {
+    const matchesName = project.name
+      .toLowerCase()
+      .includes(filterName.value.toLowerCase());
+    const matchesStatus = filterStatus.value
+      ? project.status === filterStatus.value
+      : true;
+    return matchesName && matchesStatus;
+  });
+});
+
 const isModalOpen = ref(false);
 
 const openModal = () => {
@@ -40,6 +74,33 @@ const closeModal = () => {
   <div class="table-wrap">
     <router-link to="/">← Назад</router-link>
     <h2>{{ project?.name }}</h2>
+    <div class="sort-container">
+      <div class="sort-item">
+        <label for="filterStatus">Фільтр:</label>
+        <select id="filterStatus" v-model="filterStatus">
+          <option value="">Всі</option>
+          <option value="to-do">To Do</option>
+          <option value="in-progress">In Progress</option>
+          <option value="done">Done</option>
+        </select>
+      </div>
+      <div class="sort-item">
+        <label for="sortField">Сортувати за:</label>
+        <select id="sortField" v-model="sortField" @change="sortByField">
+          <option value="status">Статус</option>
+          <option value="createdAt">Термін</option>
+        </select>
+      </div>
+      <div class="sort-item">
+        <label for="filterName">Пошук</label>
+        <input
+          type="text"
+          id="filterName"
+          v-model="filterName"
+          placeholder="Введіть назву проєкту"
+        />
+      </div>
+    </div>
     <table>
       <thead>
         <tr>
@@ -74,7 +135,7 @@ const closeModal = () => {
         <option value="done">виконано</option>
       </select>
       <label for="date">Термін</label>
-      <input type="date" name="event_date_1" id="date" />
+      <input input type="date" v-model="project.createdAt" />
       <button>Зберегти</button>
     </Modal>
   </div>
