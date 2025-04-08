@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from "vue-router";
-import { onMounted, watch, ref } from "vue";
+import { onMounted, reactive, watch, ref } from "vue";
 import ProjectPage from "./pages/ProjectPage.vue";
 import Modal from "../components/Modal.vue";
 
@@ -12,6 +12,89 @@ onMounted(() => {
       ? Math.max(...projects.value.map((p) => p.id)) + 1
       : 1;
   }
+});
+
+interface Row {
+  id: number;
+  name: string;
+  tasks: number;
+  tasks: number | string;
+  status: string;
+  createdAt: string;
+}
+
+const minWidths = [80, 200, 100, 100, 130];
+const columnWidths = ref<number[]>([80, 200, 100, 100, 130]);
+const resizingCol = ref<number | null>(null);
+const startX = ref(0);
+const startWidth = ref(0);
+
+const headers = [
+  ref<HTMLElement | null>(null),
+  ref<HTMLElement | null>(null),
+  ref<HTMLElement | null>(null),
+  ref<HTMLElement | null>(null),
+  ref<HTMLElement | null>(null),
+];
+
+const idHeader = headers[0];
+const nameHeader = headers[1];
+const tasksHeader = headers[2];
+const statusHeader = headers[3];
+const createdAtHeader = headers[4];
+
+const WIDTHS_KEY = "vue-table-column-widths";
+const saveWidthsToLocalStorage = () => {
+  localStorage.setItem(WIDTHS_KEY, JSON.stringify(columnWidths.value));
+};
+
+const startResize = (event: MouseEvent, index: number) => {
+  resizingCol.value = index;
+  startX.value = event.clientX;
+  startWidth.value = headers[index].value?.offsetWidth || 0;
+  document.addEventListener("mousemove", onMouseMove);
+  document.addEventListener("mouseup", stopResize);
+};
+
+const onMouseMove = (event: MouseEvent) => {
+  if (resizingCol.value !== null) {
+    const delta = event.clientX - startX.value;
+    const newWidth = startWidth.value + delta;
+    if (newWidth >= minWidths[resizingCol.value]) {
+      columnWidths.value[resizingCol.value] = newWidth;
+      updateWidths();
+      saveWidthsToLocalStorage();
+    }
+  }
+};
+
+const stopResize = () => {
+  document.removeEventListener("mousemove", onMouseMove);
+  document.removeEventListener("mouseup", stopResize);
+  resizingCol.value = null;
+};
+
+const updateWidths = () => {
+  headers.forEach((header, i) => {
+    const th = header.value;
+    if (th) th.style.width = columnWidths.value[i] + "px";
+  });
+};
+
+onMounted(() => {
+  const saved = localStorage.getItem(WIDTHS_KEY);
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        columnWidths.value = parsed;
+      }
+    } catch (e) {
+      console.error("Не вдалося прочитати ширину колонок з localStorage");
+    }
+  }
+
+  updateWidths();
 });
 
 interface Project {
@@ -64,11 +147,17 @@ watch(
     <table>
       <thead>
         <tr>
-          <th>id</th>
-          <th>Назва проєкту</th>
-          <th>Кількість завдань</th>
-          <th>Статус</th>
-          <th>Дата створення</th>
+          <th ref="idHeader" @mousedown="startResize($event, 0)">id</th>
+          <th ref="nameHeader" @mousedown="startResize($event, 1)">
+            Назва проєкту
+          </th>
+          <th ref="tasksHeader" @mousedown="startResize($event, 2)">
+            Кількість завдань
+          </th>
+          <th ref="statusHeader" @mousedown="startResize($event, 3)">Статус</th>
+          <th ref="createdAtHeader" @mousedown="startResize($event, 4)">
+            Дата створення
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -107,12 +196,17 @@ watch(
 
 <style scoped>
 .table-wrap {
+  width: 100%;
+  overflow-x: auto;
   position: relative;
-  max-width: 550px;
   text-align: right;
 }
 
 table {
+  max-width: 700px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
   border-radius: 5px;
   border: 1px solid #dad5c6;
   border-spacing: 0;
@@ -130,6 +224,9 @@ th {
   font-family: "Monterrat", sans-serif;
   font-weight: 400;
   padding: 10px;
+  position: relative;
+  cursor: col-resize;
+  user-select: none;
 }
 
 thead th {
@@ -142,6 +239,7 @@ td {
   font-family: "Montserrat", sans-serif;
   font-size: 12px;
   text-align: center;
+  position: relative;
 }
 
 select {
