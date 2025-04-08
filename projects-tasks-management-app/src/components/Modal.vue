@@ -38,6 +38,9 @@ const close = () => {
 }
 
 .modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
   background: #eeece3;
   padding: 20px;
   border-radius: 10px;
@@ -54,5 +57,16 @@ const close = () => {
   background: none;
   border: none;
   cursor: pointer;
+}
+
+select {
+  background-color: #eeece3;
+  border: 2px solid #dad5c6;
+  border-radius: 5px;
+}
+
+.page-modal {
+  display: flex;
+  flex-direction: column;
 }
 </style>

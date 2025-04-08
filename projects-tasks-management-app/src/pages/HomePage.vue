@@ -323,6 +323,7 @@ button {
 
 label {
   padding-right: 5px;
+  align-self: flex-start;
 }
 
 input,

@@ -1,45 +1,58 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, reactive, watch, computed } from "vue";
 import { RouterLink, RouterView, useRoute } from "vue-router";
 import Modal from "../components/Modal.vue";
 
-interface Project {
+interface Task {
   id: number;
   name: string;
-  tasks: number | string;
+  worker: string;
   status: string;
   createdAt: string;
 }
 
 const route = useRoute();
-const project = ref<Project | null>(null);
+const tasks = ref<Task[]>([]);
+const taskName = ref("");
+const taskWorker = ref("");
+const taskStatus = ref("");
+const taskDate = ref("");
+const nextId = ref(1);
+
+const projects = ref<Project[]>([]);
+
+const project = computed(() => {
+  const projectId = route.params.id;
+  return projects.value.find((p) => p.id === Number(projectId));
+});
 
 onMounted(() => {
-  const saved = localStorage.getItem("projects");
-  if (saved) {
-    const projects: Project[] = JSON.parse(saved);
-    const found = projects.find((p) => p.id === Number(route.params.id));
-    if (found) {
-      project.value = found;
-    }
+  const savedProjects = localStorage.getItem("projects");
+  if (savedProjects) {
+    projects.value = JSON.parse(savedProjects);
+  }
+  const savedTasks = localStorage.getItem("tasks");
+  if (savedTasks) {
+    tasks.value = JSON.parse(savedTasks);
+    nextId.value = tasks.value.length
+      ? Math.max(...tasks.value.map((p) => p.id)) + 1
+      : 1;
   }
 });
 
 const sortField = ref<string>("id");
 
 const sortByField = () => {
-  projects.value.sort((a, b) => {
-    const aValue = a[sortField.value as keyof Project];
-    const bValue = b[sortField.value as keyof Project];
-
-    if (sortField.value === "tasks") {
-      const aTasks = typeof aValue === "string" ? parseInt(aValue, 10) : aValue;
-      const bTasks = typeof bValue === "string" ? parseInt(bValue, 10) : bValue;
-      return aTasks - bTasks;
-    } else {
-      if (aValue < bValue) return -1;
-      if (aValue > bValue) return 1;
+  tasks.value.sort((a, b) => {
+    const aValue = a[sortField.value as keyof Task];
+    const bValue = b[sortField.value as keyof Task];
+    if (sortField.value === "createdAt") {
+      return new Date(aValue).getTime() - new Date(bValue).getTime();
     }
+    if (typeof aValue === "string" && typeof bValue === "string") {
+      return aValue.localeCompare(bValue);
+    }
+
     return 0;
   });
 };
@@ -47,13 +60,13 @@ const sortByField = () => {
 const filterName = ref("");
 const filterStatus = ref("");
 
-const filteredProjects = computed(() => {
-  return projects.value.filter((project) => {
-    const matchesName = project.name
+const filteredTasks = computed(() => {
+  return tasks.value.filter((task) => {
+    const matchesName = task.name
       .toLowerCase()
       .includes(filterName.value.toLowerCase());
     const matchesStatus = filterStatus.value
-      ? project.status === filterStatus.value
+      ? task.status === filterStatus.value
       : true;
     return matchesName && matchesStatus;
   });
@@ -68,6 +81,51 @@ const openModal = () => {
 const closeModal = () => {
   isModalOpen.value = false;
 };
+
+const addTask = () => {
+  if (!taskName.value.trim()) return;
+
+  tasks.value.push({
+    id: nextId.value++,
+    name: taskName.value,
+    worker: taskWorker.value,
+    status: taskStatus.value,
+    createdAt: taskDate.value,
+  });
+
+  taskName.value = "";
+  taskWorker.value = "";
+  taskStatus.value = "";
+  taskDate.value = "";
+
+  isModalOpen.value = false;
+};
+
+// Функція для обробки початку перетягування
+const handleDragStart = (e: DragEvent, task: Task) => {
+  e.dataTransfer?.setData("task", JSON.stringify(task));
+};
+
+// Функція для обробки скидання елементів
+const handleDrop = (e: DragEvent, index: number) => {
+  const taskData = e.dataTransfer?.getData("task");
+  if (taskData) {
+    const draggedTask: Task = JSON.parse(taskData);
+    const draggedIndex = tasks.value.findIndex((t) => t.id === draggedTask.id);
+    if (draggedIndex !== -1 && draggedIndex !== index) {
+      tasks.value.splice(draggedIndex, 1);
+      tasks.value.splice(index, 0, draggedTask);
+    }
+  }
+};
+
+watch(
+  tasks,
+  (newTasks) => {
+    localStorage.setItem("tasks", JSON.stringify(newTasks));
+  },
+  { deep: true }
+);
 </script>
 
 <template>
@@ -112,31 +170,38 @@ const closeModal = () => {
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
+        <tr
+          v-for="task in filteredTasks"
+          :key="task.id"
+          draggable="true"
+          @dragstart="handleDragStart($event, task)"
+          @drop="handleDrop($event, index)"
+          @dragover.prevent
+        >
+          <td>{{ task.id }}</td>
+          <td>{{ task.name }}</td>
+          <td>{{ task.worker }}</td>
+          <td>{{ task.status }}</td>
+          <td>{{ task.createdAt }}</td>
         </tr>
       </tbody>
     </table>
     <button @click="openModal">Додати проєкт</button>
-    <Modal :isVisible="isModalOpen" @close="closeModal">
-      <label for="taskName">Назва завдання</label>
-      <input type="text" id="taskName" />
-      <label for="name">Виконавець</label>
-      <select name="name" id="name"></select>
-      <label for="status">Статус</label>
-      <select name="status" id="status">
-        <option value="default" desabled></option>
+    <Modal :isVisible="isModalOpen" @close="closeModal" class="page-modal">
+      <label for="taskName" class="input-name">Назва завдання</label>
+      <input type="text" id="taskName" v-model="taskName" />
+      <label for="name" class="input-name">Виконавець</label>
+      <select name="name" id="name" v-model="taskWorker"></select>
+      <label for="status" class="input-name">Статус</label>
+      <select name="status" id="status" v-model="taskStatus">
+        <option value="default">--</option>
         <option value="to-do">зробити</option>
         <option value="in-progress">в роботі</option>
         <option value="done">виконано</option>
       </select>
-      <label for="date">Термін</label>
-      <input input type="date" v-model="project.createdAt" />
-      <button>Зберегти</button>
+      <label for="date" class="input-name">Термін</label>
+      <input type="date" v-model="taskDate" />
+      <button @click="addTask">Зберегти</button>
     </Modal>
   </div>
 </template>
@@ -154,12 +219,14 @@ h2 {
 }
 
 .table-wrap {
-  max-width: 550px;
+  min-width: 900px;
+  width: 100%;
+  position: relative;
   text-align: right;
-  margin: auto;
 }
 
 table {
+  width: 100%;
   border-radius: 5px;
   border: 1px solid #dad5c6;
   border-spacing: 0;
@@ -188,32 +255,27 @@ td {
   border: 1px solid #dad5c6;
 }
 
-#status,
-#date {
+label {
+  padding-right: 5px;
+  align-self: flex-start;
+}
+
+input {
+  background-color: #eeece3;
+  border: 2px solid #dad5c6;
+  border-radius: 5px;
+}
+
+select {
+  background-color: #fafafa;
   border: none;
   color: #232e3f;
 }
 
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 1000;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgba(0, 0, 0, 0.5);
-}
-
-.modal-content {
-  background-color: #fff;
-  margin: 15% auto;
-  padding: 20px;
-  border-radius: 10px;
-  width: 300px;
-  position: relative;
-  text-align: center;
+.page-modal select {
+  background-color: #eeece3;
+  border: 2px solid #dad5c6;
+  border-radius: 5px;
 }
 
 .close {
@@ -234,5 +296,27 @@ button {
   padding: 10px;
   border: none;
   cursor: pointer;
+}
+
+.page-modal button {
+  margin-top: 10px;
+}
+
+.input-name {
+  color: #232e3f;
+  font-family: "Monterrat", sans-serif;
+  font-weight: 300;
+  font-size: 15px;
+}
+
+.sort-container {
+  display: flex;
+  justify-content: space-between;
+  margin: 20px 0;
+}
+
+.sort-item {
+  font-family: "Montserrat", sans-serif;
+  font-size: 14px;
 }
 </style>
