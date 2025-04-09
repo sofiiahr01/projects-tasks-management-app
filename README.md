@@ -14,7 +14,6 @@
 ## Інструкція для запуску:
 
 ### 1. Клонування репозиторію
-```bash
 git clone https://github.com/sofiiahr01/projects-tasks-management-app.git
 cd projects-tasks-management-app
 
