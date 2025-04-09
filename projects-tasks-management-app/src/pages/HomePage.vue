@@ -120,17 +120,13 @@ interface Project {
   createdAt: string;
 }
 
-const projects = ref<Project[]>([]);
+const projects = computed(() => store.projects);
+
 const projectName = ref("");
 const isModalOpen = ref(false);
 const nextId = ref(1);
 
-const taskCount = computed(() => {
-  return projects.value.map((project) => ({
-    id: project.id,
-    taskCount: project.taskCount || 0,
-  }));
-});
+const taskCount = computed(() => store.taskCount);
 
 const openModal = () => {
   isModalOpen.value = true;

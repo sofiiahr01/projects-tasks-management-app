@@ -10,6 +10,8 @@ body {
   justify-content: center;
   align-items: center;
   background-color: #fafafa;
+  padding-top: 20px;
+  padding-bottom: 20px;
 }
 
 a {
