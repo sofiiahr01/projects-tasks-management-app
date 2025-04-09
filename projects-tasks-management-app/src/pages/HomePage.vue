@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from "vue-router";
 import { onMounted, reactive, watch, ref, computed } from "vue";
+import axios from "axios";
 import ProjectPage from "./pages/ProjectPage.vue";
 import Modal from "../components/Modal.vue";
 
