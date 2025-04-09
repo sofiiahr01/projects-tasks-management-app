@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, reactive, watch, computed } from "vue";
+import { defineProps, ref, onMounted, reactive, watch, computed } from "vue";
 import { RouterLink, RouterView, useRoute } from "vue-router";
+import axios from "axios";
 import Modal from "../components/Modal.vue";
 
 interface Task {
@@ -9,6 +10,7 @@ interface Task {
   worker: string;
   status: string;
   createdAt: string;
+  projectId: number;
 }
 
 const route = useRoute();
@@ -19,57 +21,85 @@ const taskStatus = ref("");
 const taskDate = ref("");
 const nextId = ref(1);
 
-const projects = ref<Project[]>([]);
+const workers = ref<string[]>([]);
 
-const project = computed(() => {
-  const projectId = route.params.id;
-  return projects.value.find((p) => p.id === Number(projectId));
+const fetchWorkers = async () => {
+  try {
+    const response = await axios.get("http://localhost:5000/workers");
+    workers.value = response.data;
+  } catch (error) {
+    console.error("Error fetching workers:", error);
+  }
+};
+
+onMounted(() => {
+  fetchWorkers();
 });
+
+const projects = ref<any[]>([]);
+
+const projectId = computed(() => Number(route.params.id));
 
 onMounted(() => {
   const savedProjects = localStorage.getItem("projects");
   if (savedProjects) {
     projects.value = JSON.parse(savedProjects);
   }
+
   const savedTasks = localStorage.getItem("tasks");
   if (savedTasks) {
     tasks.value = JSON.parse(savedTasks);
-    nextId.value = tasks.value.length
-      ? Math.max(...tasks.value.map((p) => p.id)) + 1
-      : 1;
+  }
+});
+
+const project = computed(() => {
+  return projects.value.find((p) => p.id === projectId.value);
+});
+
+const projectTasks = computed(() => {
+  return tasks.value.filter((task) => task.projectId === projectId.value);
+});
+
+const taskCount = computed(() => projectTasks.value.length);
+
+watch(taskCount, (newCount) => {
+  if (project.value) {
+    project.value.taskCount = newCount;
+    const projects = JSON.parse(localStorage.getItem("projects") || "[]");
+    const updatedProjects = projects.map((p) =>
+      p.id === project.value.id ? project.value : p
+    );
+    localStorage.setItem("projects", JSON.stringify(updatedProjects));
   }
 });
 
 const sortField = ref<string>("id");
 
-const sortByField = () => {
-  tasks.value.sort((a, b) => {
-    const aValue = a[sortField.value as keyof Task];
-    const bValue = b[sortField.value as keyof Task];
-    if (sortField.value === "createdAt") {
-      return new Date(aValue).getTime() - new Date(bValue).getTime();
-    }
-    if (typeof aValue === "string" && typeof bValue === "string") {
-      return aValue.localeCompare(bValue);
-    }
-
-    return 0;
-  });
-};
-
 const filterName = ref("");
 const filterStatus = ref("");
 
 const filteredTasks = computed(() => {
-  return tasks.value.filter((task) => {
-    const matchesName = task.name
-      .toLowerCase()
-      .includes(filterName.value.toLowerCase());
-    const matchesStatus = filterStatus.value
-      ? task.status === filterStatus.value
-      : true;
-    return matchesName && matchesStatus;
-  });
+  return projectTasks.value
+    .filter((task) => {
+      const matchesName = task.name
+        .toLowerCase()
+        .includes(filterName.value.toLowerCase());
+      const matchesStatus = filterStatus.value
+        ? task.status === filterStatus.value
+        : true;
+      return matchesName && matchesStatus;
+    })
+    .sort((a, b) => {
+      if (sortField.value === "createdAt") {
+        return (
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+      } else if (sortField.value === "status") {
+        return a.status.localeCompare(b.status);
+      } else {
+        return 0;
+      }
+    });
 });
 
 const isModalOpen = ref(false);
@@ -86,12 +116,15 @@ const addTask = () => {
   if (!taskName.value.trim()) return;
 
   tasks.value.push({
-    id: nextId.value++,
+    id: nextId.value,
     name: taskName.value,
     worker: taskWorker.value,
     status: taskStatus.value,
     createdAt: taskDate.value,
+    projectId: projectId.value,
   });
+
+  nextId.value++;
 
   taskName.value = "";
   taskWorker.value = "";
@@ -99,14 +132,15 @@ const addTask = () => {
   taskDate.value = "";
 
   isModalOpen.value = false;
+
+  localStorage.setItem("tasks", JSON.stringify(tasks.value));
+  localStorage.setItem("nextId", JSON.stringify(nextId.value));
 };
 
-// Функція для обробки початку перетягування
 const handleDragStart = (e: DragEvent, task: Task) => {
   e.dataTransfer?.setData("task", JSON.stringify(task));
 };
 
-// Функція для обробки скидання елементів
 const handleDrop = (e: DragEvent, index: number) => {
   const taskData = e.dataTransfer?.getData("task");
   if (taskData) {
@@ -144,7 +178,7 @@ watch(
       </div>
       <div class="sort-item">
         <label for="sortField">Сортувати за:</label>
-        <select id="sortField" v-model="sortField" @change="sortByField">
+        <select id="sortField" v-model="sortField">
           <option value="status">Статус</option>
           <option value="createdAt">Термін</option>
         </select>
@@ -162,7 +196,7 @@ watch(
       </thead>
       <tbody>
         <tr
-          v-for="task in filteredTasks"
+          v-for="(task, index) in filteredTasks"
           :key="task.id"
           draggable="true"
           @dragstart="handleDragStart($event, task)"
@@ -177,12 +211,17 @@ watch(
         </tr>
       </tbody>
     </table>
-    <button @click="openModal">Додати проєкт</button>
+    <button @click="openModal">Додати завдання</button>
     <Modal :isVisible="isModalOpen" @close="closeModal" class="page-modal">
       <label for="taskName" class="input-name">Назва завдання</label>
       <input type="text" id="taskName" v-model="taskName" />
       <label for="name" class="input-name">Виконавець</label>
-      <select name="name" id="name" v-model="taskWorker"></select>
+      <select name="name" id="name" v-model="taskWorker">
+        <option value="" disabled>Оберіть виконавця</option>
+        <option v-for="worker in workers" :key="worker" :value="worker">
+          {{ worker }}
+        </option>
+      </select>
       <label for="status" class="input-name">Статус</label>
       <select name="status" id="status" v-model="taskStatus">
         <option value="default">--</option>

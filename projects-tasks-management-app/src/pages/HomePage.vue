@@ -104,9 +104,7 @@ const sortByField = () => {
     const bValue = b[sortField.value as keyof Project];
 
     if (sortField.value === "tasks") {
-      const aTasks = aValue as number;
-      const bTasks = bValue as number;
-      return aTasks - bTasks;
+      return b.taskCount - a.taskCount;
     } else {
       if (aValue < bValue) return -1;
       if (aValue > bValue) return 1;
@@ -133,7 +131,8 @@ const filteredProjects = computed(() => {
 interface Project {
   id: number;
   name: string;
-  tasks: number;
+  tasks: any[];
+  taskCount: number;
   status: string;
   createdAt: string;
 }
@@ -142,6 +141,13 @@ const projects = ref<Project[]>([]);
 const projectName = ref("");
 const isModalOpen = ref(false);
 const nextId = ref(1);
+
+const taskCount = computed(() => {
+  return projects.value.map((project) => ({
+    id: project.id,
+    taskCount: project.taskCount || 0,
+  }));
+});
 
 const openModal = () => {
   isModalOpen.value = true;
@@ -230,7 +236,11 @@ watch(
               project.name
             }}</router-link>
           </td>
-          <td contenteditable="true">{{ project.tasks }}</td>
+          <td>
+            {{
+              taskCount.find((item) => item.id === project.id)?.taskCount || 0
+            }}
+          </td>
           <td>
             <select v-model="project.status">
               <option value="">--</option>
@@ -266,7 +276,6 @@ watch(
 
 table {
   max-width: 700px;
-  border-collapse: collapse;
   table-layout: fixed;
   width: 100%;
   border-radius: 5px;

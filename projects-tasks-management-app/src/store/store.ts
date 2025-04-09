@@ -1,4 +1,3 @@
-// src/stores/taskStore.ts
 import { defineStore } from "pinia";
 
 interface Task {
@@ -16,14 +15,12 @@ export const useTaskStore = defineStore("task", {
   }),
 
   actions: {
-    // Додавання задачі
     addTask(task: Task) {
       this.tasks.push(task);
       this.nextId++;
       this.saveTasks();
     },
 
-    // Завантаження задач з localStorage
     loadTasks() {
       const savedTasks = localStorage.getItem("tasks");
       if (savedTasks) {
@@ -35,12 +32,10 @@ export const useTaskStore = defineStore("task", {
       }
     },
 
-    // Збереження задач в localStorage
     saveTasks() {
       localStorage.setItem("tasks", JSON.stringify(this.tasks));
     },
 
-    // Оновлення задачі
     updateTask(task: Task) {
       const index = this.tasks.findIndex((t) => t.id === task.id);
       if (index !== -1) {
@@ -49,7 +44,6 @@ export const useTaskStore = defineStore("task", {
       }
     },
 
-    // Видалення задачі
     removeTask(taskId: number) {
       this.tasks = this.tasks.filter((task) => task.id !== taskId);
       this.saveTasks();
