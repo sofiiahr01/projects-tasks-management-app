@@ -4,16 +4,14 @@ import { onMounted, reactive, watch, ref, computed } from "vue";
 import axios from "axios";
 import ProjectPage from "./pages/ProjectPage.vue";
 import Modal from "../components/Modal.vue";
+import { useProjectStore } from "../store/projectStore";
+const store = useProjectStore();
 
-onMounted(() => {
-  const savedProjects = localStorage.getItem("projects");
-  if (savedProjects) {
-    projects.value = JSON.parse(savedProjects);
-    nextId.value = projects.value.length
-      ? Math.max(...projects.value.map((p) => p.id)) + 1
-      : 1;
-  }
-});
+const addProject = () => {
+  store.addProject(projectName.value);
+  projectName.value = "";
+  isModalOpen.value = false;
+};
 
 interface Row {
   id: number;
@@ -81,22 +79,6 @@ const updateWidths = () => {
   });
 };
 
-onMounted(() => {
-  const saved = localStorage.getItem(WIDTHS_KEY);
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) {
-        columnWidths.value = parsed;
-      }
-    } catch (e) {
-      console.error("Не вдалося прочитати ширину колонок з localStorage");
-    }
-  }
-
-  updateWidths();
-});
-
 const sortField = ref<string>("id");
 
 const sortByField = () => {
@@ -158,20 +140,31 @@ const closeModal = () => {
   isModalOpen.value = false;
 };
 
-const addProject = () => {
-  if (!projectName.value.trim()) return;
+onMounted(() => {
+  store.loadFromLocalStorage();
 
-  projects.value.push({
-    id: nextId.value++,
-    name: projectName.value,
-    tasks: 0,
-    status: "",
-    createdAt: "",
-  });
+  const savedProjects = localStorage.getItem("projects");
+  if (savedProjects) {
+    projects.value = JSON.parse(savedProjects);
+    nextId.value = projects.value.length
+      ? Math.max(...projects.value.map((p) => p.id)) + 1
+      : 1;
+  }
 
-  projectName.value = "";
-  isModalOpen.value = false;
-};
+  const savedWidths = localStorage.getItem(WIDTHS_KEY);
+  if (savedWidths) {
+    try {
+      const parsed = JSON.parse(savedWidths);
+      if (Array.isArray(parsed)) {
+        columnWidths.value = parsed;
+      }
+    } catch (e) {
+      console.error("Не вдалося прочитати ширину колонок з localStorage");
+    }
+  }
+
+  updateWidths();
+});
 
 watch(
   projects,
