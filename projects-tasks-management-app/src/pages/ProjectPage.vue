@@ -21,7 +21,12 @@ const taskStatus = ref("");
 const taskDate = ref("");
 const nextId = ref(1);
 
-const workers = ref<string[]>([]);
+interface Worker {
+  id: number;
+  name: string;
+}
+
+const workers = ref<Worker[]>([]);
 
 const fetchWorkers = async () => {
   try {
@@ -218,8 +223,8 @@ watch(
       <label for="name" class="input-name">Виконавець</label>
       <select name="name" id="name" v-model="taskWorker">
         <option value="" disabled>Оберіть виконавця</option>
-        <option v-for="worker in workers" :key="worker" :value="worker">
-          {{ worker }}
+        <option v-for="worker in workers" :key="worker.id" :value="worker.name">
+          {{ worker.name }}
         </option>
       </select>
       <label for="status" class="input-name">Статус</label>
