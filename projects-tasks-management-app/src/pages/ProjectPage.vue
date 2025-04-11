@@ -53,7 +53,16 @@ onMounted(() => {
 
   const savedTasks = localStorage.getItem("tasks");
   if (savedTasks) {
-    tasks.value = JSON.parse(savedTasks);
+    try {
+      tasks.value = JSON.parse(savedTasks);
+      if (!Array.isArray(tasks.value)) {
+        tasks.value = [];
+      }
+    } catch (error) {
+      tasks.value = [];
+    }
+  } else {
+    tasks.value = [];
   }
 });
 
@@ -120,26 +129,30 @@ const closeModal = () => {
 const addTask = () => {
   if (!taskName.value.trim()) return;
 
-  tasks.value.push({
-    id: nextId.value,
-    name: taskName.value,
-    worker: taskWorker.value,
-    status: taskStatus.value,
-    createdAt: taskDate.value,
-    projectId: projectId.value,
-  });
+  if (Array.isArray(tasks.value)) {
+    tasks.value.push({
+      id: nextId.value,
+      name: taskName.value,
+      worker: taskWorker.value,
+      status: taskStatus.value,
+      createdAt: taskDate.value,
+      projectId: projectId.value,
+    });
 
-  nextId.value++;
+    nextId.value++;
 
-  taskName.value = "";
-  taskWorker.value = "";
-  taskStatus.value = "";
-  taskDate.value = "";
+    taskName.value = "";
+    taskWorker.value = "";
+    taskStatus.value = "";
+    taskDate.value = "";
 
-  isModalOpen.value = false;
+    isModalOpen.value = false;
 
-  localStorage.setItem("tasks", JSON.stringify(tasks.value));
-  localStorage.setItem("nextId", JSON.stringify(nextId.value));
+    localStorage.setItem("tasks", JSON.stringify(tasks.value));
+    localStorage.setItem("nextId", JSON.stringify(nextId.value));
+  } else {
+    console.error("Tasks value is not an array");
+  }
 };
 
 const handleDragStart = (e: DragEvent, task: Task) => {
@@ -235,7 +248,7 @@ watch(
         <option value="done">виконано</option>
       </select>
       <label for="date" class="input-name">Термін</label>
-      <input type="date" v-model="taskDate" />
+      <input type="date" v-model="taskDate" id="date" />
       <button @click="addTask">Зберегти</button>
     </Modal>
   </div>
