@@ -27,4 +27,5 @@ npm install -g json-server
 json-server --watch db.json --port 3000
 
 ### 4. Запуск клієнтської частини
+cd projects-tasks-management-app
 npm run dev
