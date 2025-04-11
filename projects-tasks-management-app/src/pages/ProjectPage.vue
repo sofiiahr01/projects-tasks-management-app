@@ -30,7 +30,7 @@ const workers = ref<Worker[]>([]);
 
 const fetchWorkers = async () => {
   try {
-    const response = await axios.get("http://localhost:5000/workers");
+    const response = await axios.get("http://localhost:3000/workers");
     workers.value = response.data;
   } catch (error) {
     console.error("Error fetching workers:", error);
@@ -325,7 +325,7 @@ select {
 button {
   background-color: #cf9421;
   color: #eeece3;
-  font-family: "Monterrat", sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-weight: 400;
   border-radius: 10px;
   padding: 10px;
